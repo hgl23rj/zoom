@@ -167,20 +167,6 @@
       background-color: var(--navy-mid);
     }
 
-    .btn-share {
-      background-color: #2563eb;
-      color: #fff;
-    }
-
-    .btn-share:hover {
-      background-color: #1d4ed8;
-    }
-
-    .btn-share.active {
-      background-color: #f59e0b;
-      color: #0b192c;
-    }
-
     .join-box {
       display: flex;
       gap: 0.5rem;
@@ -246,14 +232,11 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      flex-wrap: wrap;
-      gap: 0.6rem;
       font-size: 0.9rem;
     }
 
     .meeting-actions {
       display: flex;
-      flex-wrap: wrap;
       gap: 0.6rem;
     }
 
@@ -333,7 +316,7 @@
       <h3>Recursos incluídos na sala</h3>
       <ul>
         <li>Áudio e vídeo em alta definição via WebRTC</li>
-        <li>Compartilhamento de tela e janelas com 1 clique</li>
+        <li>Compartilhamento de tela e janelas</li>
         <li>Chat integrado durante o atendimento</li>
         <li>Compatível com celular, tablet e computador</li>
         <li>Sem necessidade de instalar aplicativos</li>
@@ -348,9 +331,6 @@
         <strong>MeetPro</strong> &bull; Sala: <span id="active-room-label"></span>
       </div>
       <div class="meeting-actions">
-        <button id="btn-share-screen" class="btn btn-share btn-sm" onclick="toggleScreenShare()">
-          🖥️ Compartilhar Tela
-        </button>
         <button class="btn btn-primary btn-sm" onclick="copyActiveRoomLink()">📋 Copiar Convite</button>
         <button class="btn btn-danger btn-sm" onclick="leaveMeeting()">Sair da Sala</button>
       </div>
@@ -361,7 +341,6 @@
   <script>
     let jitsiApi = null;
     let currentRoomCode = "";
-    let isSharingScreen = false;
 
     // Atualiza relógio
     function updateClock() {
@@ -374,7 +353,7 @@
     setInterval(updateClock, 1000);
     updateClock();
 
-    // Gera um identificador único
+    // Gera um identificador único e difícil de adivinhar
     function generateRoomId() {
       const part = () => Math.random().toString(36).substring(2, 6);
       return `MeetPro-${part()}-${part()}-${Date.now().toString(36).slice(-4)}`;
@@ -386,11 +365,13 @@
       return `${baseUrl}?sala=${encodeURIComponent(roomId)}`;
     }
 
+    // Inicia reunião imediatamente
     function startInstantMeeting() {
       const roomId = generateRoomId();
       enterMeeting(roomId);
     }
 
+    // Gera link para envio antecipado
     function createScheduledLink() {
       const roomId = generateRoomId();
       const fullUrl = buildShareableUrl(roomId);
@@ -411,6 +392,7 @@
       if (roomId) enterMeeting(roomId);
     }
 
+    // Entrar digitando código ou colando o link completo
     function joinFromInput() {
       const raw = document.getElementById("room-input").value.trim();
       if (!raw) return alert("Por favor, insira um código ou link válido.");
@@ -429,14 +411,13 @@
     // Inicializa a chamada real do Jitsi dentro do container
     function enterMeeting(roomId) {
       currentRoomCode = roomId;
-      isSharingScreen = false;
-      updateShareButtonUI(false);
-
       const displayName = document.getElementById("user-name").value.trim() || "Participante";
 
+      // Atualiza URL sem recarregar a página
       const newUrl = buildShareableUrl(roomId);
       window.history.pushState({ path: newUrl }, "", newUrl);
 
+      // Alterna telas
       document.getElementById("main-header").style.display = "none";
       document.getElementById("home-screen").style.display = "none";
       document.getElementById("meeting-screen").style.display = "flex";
@@ -455,19 +436,7 @@
         configOverwrite: {
           prejoinPageEnabled: false,
           startWithAudioMuted: false,
-          startWithVideoMuted: false,
-          toolbarButtons: [
-            "microphone",
-            "camera",
-            "desktop",
-            "chat",
-            "raisehand",
-            "participants-pane",
-            "tileview",
-            "fullscreen",
-            "settings",
-            "hangup"
-          ]
+          startWithVideoMuted: false
         },
         interfaceConfigOverwrite: {
           SHOW_JITSI_WATERMARK: false,
@@ -477,39 +446,10 @@
 
       jitsiApi = new JitsiMeetExternalAPI(domain, options);
 
-      // Garante permissão explícita de captura de tela no iframe
-      const iframe = jitsiApi.getIFrame();
-      if (iframe) {
-        iframe.setAttribute("allow", "camera; microphone; display-capture; fullscreen; clipboard-write");
-      }
-
-      // Atualiza o visual do botão quando o compartilhamento inicia ou para
-      jitsiApi.addEventListener("screenSharingStatusChanged", (event) => {
-        isSharingScreen = event.on;
-        updateShareButtonUI(event.on);
-      });
-
+      // Volta para a tela inicial se o usuário encerrar pelo botão interno do Jitsi
       jitsiApi.addEventListener("readyToClose", () => {
         leaveMeeting();
       });
-    }
-
-    // Aciona ou encerra o compartilhamento de tela pelo botão superior do MeetPro
-    function toggleScreenShare() {
-      if (!jitsiApi) return;
-      jitsiApi.executeCommand("toggleShareScreen");
-    }
-
-    function updateShareButtonUI(sharing) {
-      const btn = document.getElementById("btn-share-screen");
-      if (!btn) return;
-      if (sharing) {
-        btn.classList.add("active");
-        btn.innerHTML = "⏹ Parar Compartilhamento";
-      } else {
-        btn.classList.remove("active");
-        btn.innerHTML = "🖥️ Compartilhar Tela";
-      }
     }
 
     function copyActiveRoomLink() {
@@ -523,7 +463,7 @@
         jitsiApi.dispose();
         jitsiApi = null;
       }
-      isSharingScreen = false;
+      // Limpa parâmetro da URL
       const cleanUrl = window.location.origin + window.location.pathname;
       window.history.pushState({}, "", cleanUrl);
 
@@ -532,12 +472,13 @@
       document.getElementById("home-screen").style.display = "grid";
     }
 
-    // Abre direto se houver parâmetro ?sala= na URL
+    // Verifica automaticamente se alguém abriu a página através de um link de convite (?sala=...)
     window.addEventListener("DOMContentLoaded", () => {
       const params = new URLSearchParams(window.location.search);
       const invitedRoom = params.get("sala");
       if (invitedRoom) {
         document.getElementById("room-input").value = invitedRoom;
+        // Opcional: pede confirmação do nome antes de entrar ou entra direto:
         const guestName = prompt("Você foi convidado para uma reunião. Digite seu nome para entrar:", "Convidado");
         if (guestName !== null) {
           if (guestName.trim()) document.getElementById("user-name").value = guestName.trim();
