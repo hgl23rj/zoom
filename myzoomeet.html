@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MeetPro — Videoconferências Seguras</title>
+  <!-- API Externa Gratuita do Jitsi Meet -->
+  <script src="https://meet.jit.si/external_api.js"></script>
+  <style>
+    :root {
+      --navy-dark: #102a45;
+      --navy-mid: #1a3b5c;
+      --emerald: #10b981;
+      --emerald-hover: #059669;
+      --cream: #faf8f5;
+      --text-main: #1e293b;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      background-color: var(--cream);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Cabeçalho */
+    header {
+      background-color: var(--navy-dark);
+      color: #fff;
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 1.35rem;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+
+    .brand-badge {
+      background-color: var(--emerald);
+      color: var(--navy-dark);
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 800;
+    }
+
+    .clock {
+      font-size: 0.95rem;
+      color: #cbd5e1;
+    }
+
+    /* Tela Inicial */
+    #home-screen {
+      flex: 1;
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 3rem 1.5rem;
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 3rem;
+      align-items: center;
+    }
+
+    @media (max-width: 820px) {
+      #home-screen {
+        grid-template-columns: 1fr;
+        text-align: center;
+      }
+    }
+
+    h1 {
+      font-size: 2.4rem;
+      color: var(--navy-dark);
+      line-height: 1.2;
+      margin-bottom: 1rem;
+    }
+
+    .subtitle {
+      font-size: 1.1rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+      margin-bottom: 2rem;
+    }
+
+    .form-group {
+      margin-bottom: 1.2rem;
+      text-align: left;
+    }
+
+    label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--navy-dark);
+      margin-bottom: 0.4rem;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 0.8rem 1rem;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: 1rem;
+      background: #fff;
+      transition: border-color 0.2s;
+    }
+
+    input[type="text"]:focus {
+      outline: none;
+      border-color: var(--emerald);
+    }
+
+    .actions-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.8rem;
+      align-items: center;
+    }
+
+    .btn {
+      padding: 0.85rem 1.4rem;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn-primary {
+      background-color: var(--emerald);
+      color: #fff;
+    }
+
+    .btn-primary:hover {
+      background-color: var(--emerald-hover);
+    }
+
+    .btn-secondary {
+      background-color: var(--navy-dark);
+      color: #fff;
+    }
+
+    .btn-secondary:hover {
+      background-color: var(--navy-mid);
+    }
+
+    .join-box {
+      display: flex;
+      gap: 0.5rem;
+      flex: 1;
+      min-width: 240px;
+    }
+
+    /* Card Lateral */
+    .info-card {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2rem;
+      box-shadow: 0 10px 25px rgba(16, 42, 69, 0.06);
+    }
+
+    .info-card h3 {
+      color: var(--navy-dark);
+      margin-bottom: 0.8rem;
+    }
+
+    .info-card ul {
+      list-style: none;
+      color: var(--text-muted);
+      line-height: 1.8;
+      font-size: 0.95rem;
+    }
+
+    .info-card li::before {
+      content: "✓ ";
+      color: var(--emerald);
+      font-weight: bold;
+    }
+
+    /* Caixa de Link Gerado */
+    #invite-box {
+      display: none;
+      margin-top: 1.5rem;
+      background: #ecfdf5;
+      border: 1px solid #a7f3d0;
+      padding: 1rem;
+      border-radius: 10px;
+    }
+
+    .invite-link-row {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+    }
+
+    /* Tela da Reunião (Jitsi) */
+    #meeting-screen {
+      display: none;
+      flex-direction: column;
+      height: 100vh;
+      background-color: #0b192c;
+    }
+
+    .meeting-topbar {
+      background-color: var(--navy-dark);
+      color: #fff;
+      padding: 0.6rem 1.2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.9rem;
+    }
+
+    .meeting-actions {
+      display: flex;
+      gap: 0.6rem;
+    }
+
+    .btn-sm {
+      padding: 0.45rem 0.9rem;
+      font-size: 0.85rem;
+      border-radius: 6px;
+    }
+
+    .btn-danger {
+      background-color: #ef4444;
+      color: #fff;
+    }
+
+    #jitsi-container {
+      flex: 1;
+      width: 100%;
+      height: 100%;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- CABEÇALHO -->
+  <header id="main-header">
+    <div class="brand">
+      <span>MeetPro</span>
+      <span class="brand-badge">LIVE</span>
+    </div>
+    <div class="clock" id="live-clock">--:--</div>
+  </header>
+
+  <!-- TELA INICIAL -->
+  <main id="home-screen">
+    <div>
+      <h1>Atendimentos e reuniões em vídeo com um clique.</h1>
+      <p class="subtitle">
+        Crie uma sala instantânea, copie o link de convite e conecte-se com áudio e vídeo em tempo real direto pelo navegador.
+      </p>
+
+      <div class="form-group">
+        <label for="user-name">Seu nome de exibição na sala</label>
+        <input type="text" id="user-name" placeholder="Ex.: Dr. Francisco Lima" value="Dr. Francisco Lima" />
+      </div>
+
+      <div class="actions-row">
+        <button class="btn btn-primary" onclick="startInstantMeeting()">
+          ▶ Iniciar reunião agora
+        </button>
+        <button class="btn btn-secondary" onclick="createScheduledLink()">
+          🔗 Gerar link para depois
+        </button>
+      </div>
+
+      <div style="margin: 1.5rem 0; border-top: 1px solid var(--border);"></div>
+
+      <div class="form-group">
+        <label for="room-input">Ou entre com um código ou link de reunião</label>
+        <div class="join-box">
+          <input type="text" id="room-input" placeholder="Cole o link ou código da sala..." />
+          <button class="btn btn-secondary" onclick="joinFromInput()">Entrar</button>
+        </div>
+      </div>
+
+      <!-- Caixa de Convite Gerado -->
+      <div id="invite-box">
+        <strong style="color: var(--navy-dark); font-size: 0.9rem;">Link de convite pronto para enviar:</strong>
+        <div class="invite-link-row">
+          <input type="text" id="generated-link" readonly />
+          <button class="btn btn-primary btn-sm" onclick="copyInviteLink()">Copiar</button>
+          <button class="btn btn-secondary btn-sm" onclick="openGeneratedRoom()">Abrir</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="info-card">
+      <h3>Recursos incluídos na sala</h3>
+      <ul>
+        <li>Áudio e vídeo em alta definição via WebRTC</li>
+        <li>Compartilhamento de tela e janelas</li>
+        <li>Chat integrado durante o atendimento</li>
+        <li>Compatível com celular, tablet e computador</li>
+        <li>Sem necessidade de instalar aplicativos</li>
+      </ul>
+    </div>
+  </main>
+
+  <!-- TELA DA REUNIÃO ATIVA -->
+  <section id="meeting-screen">
+    <div class="meeting-topbar">
+      <div>
+        <strong>MeetPro</strong> &bull; Sala: <span id="active-room-label"></span>
+      </div>
+      <div class="meeting-actions">
+        <button class="btn btn-primary btn-sm" onclick="copyActiveRoomLink()">📋 Copiar Convite</button>
+        <button class="btn btn-danger btn-sm" onclick="leaveMeeting()">Sair da Sala</button>
+      </div>
+    </div>
+    <div id="jitsi-container"></div>
+  </section>
+
+  <script>
+    let jitsiApi = null;
+    let currentRoomCode = "";
+
+    // Atualiza relógio
+    function updateClock() {
+      const now = new Date();
+      document.getElementById("live-clock").textContent = now.toLocaleTimeString("pt-BR", {
+        hour: "2-digit",
+        minute: "2-digit"
+      });
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // Gera um identificador único e difícil de adivinhar
+    function generateRoomId() {
+      const part = () => Math.random().toString(36).substring(2, 6);
+      return `MeetPro-${part()}-${part()}-${Date.now().toString(36).slice(-4)}`;
+    }
+
+    // Monta a URL real baseada no local onde o HTML está hospedado
+    function buildShareableUrl(roomId) {
+      const baseUrl = window.location.origin + window.location.pathname;
+      return `${baseUrl}?sala=${encodeURIComponent(roomId)}`;
+    }
+
+    // Inicia reunião imediatamente
+    function startInstantMeeting() {
+      const roomId = generateRoomId();
+      enterMeeting(roomId);
+    }
+
+    // Gera link para envio antecipado
+    function createScheduledLink() {
+      const roomId = generateRoomId();
+      const fullUrl = buildShareableUrl(roomId);
+      document.getElementById("generated-link").value = fullUrl;
+      document.getElementById("invite-box").style.display = "block";
+    }
+
+    function copyInviteLink() {
+      const input = document.getElementById("generated-link");
+      input.select();
+      navigator.clipboard.writeText(input.value);
+      alert("Link de convite copiado!");
+    }
+
+    function openGeneratedRoom() {
+      const url = new URL(document.getElementById("generated-link").value);
+      const roomId = url.searchParams.get("sala");
+      if (roomId) enterMeeting(roomId);
+    }
+
+    // Entrar digitando código ou colando o link completo
+    function joinFromInput() {
+      const raw = document.getElementById("room-input").value.trim();
+      if (!raw) return alert("Por favor, insira um código ou link válido.");
+
+      let roomId = raw;
+      try {
+        if (raw.startsWith("http")) {
+          const parsedUrl = new URL(raw);
+          roomId = parsedUrl.searchParams.get("sala") || raw.split("/").pop();
+        }
+      } catch (e) {}
+
+      enterMeeting(roomId);
+    }
+
+    // Inicializa a chamada real do Jitsi dentro do container
+    function enterMeeting(roomId) {
+      currentRoomCode = roomId;
+      const displayName = document.getElementById("user-name").value.trim() || "Participante";
+
+      // Atualiza URL sem recarregar a página
+      const newUrl = buildShareableUrl(roomId);
+      window.history.pushState({ path: newUrl }, "", newUrl);
+
+      // Alterna telas
+      document.getElementById("main-header").style.display = "none";
+      document.getElementById("home-screen").style.display = "none";
+      document.getElementById("meeting-screen").style.display = "flex";
+      document.getElementById("active-room-label").textContent = roomId;
+
+      const domain = "meet.jit.si";
+      const options = {
+        roomName: roomId,
+        width: "100%",
+        height: "100%",
+        parentNode: document.querySelector("#jitsi-container"),
+        lang: "ptBR",
+        userInfo: {
+          displayName: displayName
+        },
+        configOverwrite: {
+          prejoinPageEnabled: false,
+          startWithAudioMuted: false,
+          startWithVideoMuted: false
+        },
+        interfaceConfigOverwrite: {
+          SHOW_JITSI_WATERMARK: false,
+          SHOW_WATERMARK_FOR_GUESTS: false
+        }
+      };
+
+      jitsiApi = new JitsiMeetExternalAPI(domain, options);
+
+      // Volta para a tela inicial se o usuário encerrar pelo botão interno do Jitsi
+      jitsiApi.addEventListener("readyToClose", () => {
+        leaveMeeting();
+      });
+    }
+
+    function copyActiveRoomLink() {
+      const link = buildShareableUrl(currentRoomCode);
+      navigator.clipboard.writeText(link);
+      alert("Link da sala copiado! Envie para o participante:\n" + link);
+    }
+
+    function leaveMeeting() {
+      if (jitsiApi) {
+        jitsiApi.dispose();
+        jitsiApi = null;
+      }
+      // Limpa parâmetro da URL
+      const cleanUrl = window.location.origin + window.location.pathname;
+      window.history.pushState({}, "", cleanUrl);
+
+      document.getElementById("meeting-screen").style.display = "none";
+      document.getElementById("main-header").style.display = "flex";
+      document.getElementById("home-screen").style.display = "grid";
+    }
+
+    // Verifica automaticamente se alguém abriu a página através de um link de convite (?sala=...)
+    window.addEventListener("DOMContentLoaded", () => {
+      const params = new URLSearchParams(window.location.search);
+      const invitedRoom = params.get("sala");
+      if (invitedRoom) {
+        document.getElementById("room-input").value = invitedRoom;
+        // Opcional: pede confirmação do nome antes de entrar ou entra direto:
+        const guestName = prompt("Você foi convidado para uma reunião. Digite seu nome para entrar:", "Convidado");
+        if (guestName !== null) {
+          if (guestName.trim()) document.getElementById("user-name").value = guestName.trim();
+          enterMeeting(invitedRoom);
+        }
+      }
+    });
+  </script>
+</body>
+</html>
